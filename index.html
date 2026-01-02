@@ -1118,82 +1118,99 @@
         }
         
         // Setup Google Apps Script API
-        function setupGASAPI(url) {
-            // Remove trailing slash if exists
-            url = url.replace(/\/$/, '');
-            
-            // Create proxy functions for GAS
-            window.gas = {
-                run: {
-                    withSuccessHandler: function(callback) {
-                        this.successCallback = callback;
-                        return this;
+        // Setup Google Apps Script API
+function setupGASAPI(url) {
+    // Remove trailing slash if exists
+    url = url.replace(/\/$/, '');
+    
+    // Create proxy functions for GAS
+    window.gas = {
+        run: {
+            withSuccessHandler: function(callback) {
+                this.successCallback = callback;
+                return this;
+            },
+            withFailureHandler: function(callback) {
+                this.failureCallback = callback;
+                return this;
+            },
+            authenticateUser: function(username, password) {
+                this.callAPI('authenticateUser', { username, password });
+                return this;
+            },
+            validateSession: function(session) {
+                this.callAPI('validateSession', { session });
+                return this;
+            },
+            getDashboardStats: function() {
+                this.callAPI('getDashboardStats', {});
+                return this;
+            },
+            searchBarang: function(query) {
+                this.callAPI('searchBarang', { query });
+                return this;
+            },
+            getBarangDetail: function(kodeBarang) {
+                this.callAPI('getBarangDetail', { kodeBarang });
+                return this;
+            },
+            getSuppliers: function() {
+                this.callAPI('getSuppliers', {});
+                return this;
+            },
+            saveTransaksiMasuk: function(transaksiData, session) {
+                this.callAPI('saveTransaksiMasuk', { transaksiData, session });
+                return this;
+            },
+            getActivityLog: function(session, limit) {
+                this.callAPI('getActivityLog', { session, limit: limit || 10 });
+                return this;
+            },
+            testConnection: function() {
+                this.callAPI('testConnection', {});
+                return this;
+            },
+            callAPI: function(functionName, params) {
+                const self = this;
+                const scriptUrl = backendUrl;
+                
+                console.log('Calling GAS API:', functionName, params);
+                
+                // Prepare request data
+                const requestData = {
+                    function: functionName,
+                    data: params
+                };
+                
+                // Send request
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                    withFailureHandler: function(callback) {
-                        this.failureCallback = callback;
-                        return this;
-                    },
-                    authenticateUser: function(username, password) {
-                        this.callAPI('authenticateUser', { username, password });
-                        return this;
-                    },
-                    validateSession: function(session) {
-                        this.callAPI('validateSession', { session });
-                        return this;
-                    },
-                    getDashboardStats: function() {
-                        this.callAPI('getDashboardStats', {});
-                        return this;
-                    },
-                    searchBarang: function(query) {
-                        this.callAPI('searchBarang', { query });
-                        return this;
-                    },
-                    getBarangDetail: function(kodeBarang) {
-                        this.callAPI('getBarangDetail', { kodeBarang });
-                        return this;
-                    },
-                    getSuppliers: function() {
-                        this.callAPI('getSuppliers', {});
-                        return this;
-                    },
-                    saveTransaksiMasuk: function(transaksiData, session) {
-                        this.callAPI('saveTransaksiMasuk', { transaksiData, session });
-                        return this;
-                    },
-                    getActivityLog: function(session, limit) {
-                        this.callAPI('getActivityLog', { session, limit });
-                        return this;
-                    },
-                    callAPI: function(functionName, params) {
-                        const self = this;
-                        const scriptUrl = backendUrl;
-                        
-                        // Create form data
-                        const formData = new FormData();
-                        formData.append('function', functionName);
-                        formData.append('data', JSON.stringify(params));
-                        
-                        // Send request
-                        fetch(scriptUrl, {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (self.successCallback) {
-                                self.successCallback(data);
-                            }
-                        })
-                        .catch(error => {
-                            if (self.failureCallback) {
-                                self.failureCallback(error);
-                            }
-                        });
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('API response:', data);
+                    if (self.successCallback) {
+                        self.successCallback(data);
                     }
-                }
-            };
+                })
+                .catch(error => {
+                    console.error('API call error:', error);
+                    if (self.failureCallback) {
+                        self.failureCallback(error);
+                    }
+                });
+            }
         }
+    };
+}
         
         // Setup event listeners
         function setupEventListeners() {
