@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Inventory</title>
+    <!-- Import Font Segoe UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Reset dan Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #f72585;
+            --dark: #1a1a2e;
+            --dark-light: #2d2d44;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border: #404040;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Container utama */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Animasi Kubus Nexus */
+        .nexus-cube {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            transform-style: preserve-3d;
+            animation: rotateCube 20s infinite linear;
+            opacity: 0.1;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .face {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(45deg, rgba(67, 97, 238, 0.3), rgba(114, 9, 183, 0.3));
+            border: 2px solid rgba(76, 201, 240, 0.3);
+            box-shadow: inset 0 0 20px rgba(76, 201, 240, 0.2);
+        }
+
+        .front  { transform: translateZ(150px); }
+        .back   { transform: translateZ(-150px) rotateY(180deg); }
+        .right  { transform: rotateY(90deg) translateZ(150px); }
+        .left   { transform: rotateY(-90deg) translateZ(150px); }
+        .top    { transform: rotateX(90deg) translateZ(150px); }
+        .bottom { transform: rotateX(-90deg) translateZ(150px); }
+
+        @keyframes rotateCube {
+            0% { transform: translate(-50%, -50%) rotateX(0) rotateY(0) rotateZ(0); }
+            100% { transform: translate(-50%, -50%) rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+        }
+
+        /* Login Page Styles */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--dark-light) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-box {
+            background: rgba(42, 42, 64, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            position: relative;
+            z-index: 2;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--light);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--light);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-success { background: linear-gradient(45deg, #4cc9f0, #4361ee); }
+        .btn-warning { background: linear-gradient(45deg, #f8961e, #f72585); }
+        .btn-danger { background: linear-gradient(45deg, #f72585, #7209b7); }
+        .btn-info { background: linear-gradient(45deg, #7209b7, #3a0ca3); }
+
+        /* Loading State */
+        .loading {
+            position: relative;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Dashboard Styles */
+        .dashboard {
+            display: none;
+        }
+
+        .navbar {
+            background: rgba(42, 42, 64, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-brand h2 {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: rgba(42, 42, 64, 0.95);
+            border-right: 1px solid var(--border);
+            height: calc(100vh - 70px);
+            position: fixed;
+            top: 70px;
+            left: 0;
+            overflow-y: auto;
+            transition: var(--transition);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: calc(100vh - 70px);
+            transition: var(--transition);
+        }
+
+        .menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-item:hover {
+            background: rgba(67, 97, 238, 0.1);
+            border-left-color: var(--primary);
+        }
+
+        .menu-item.active {
+            background: rgba(67, 97, 238, 0.2);
+            border-left-color: var(--primary);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(42, 42, 64, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: rgba(67, 97, 238, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Tables */
+        .table-container {
+            background: rgba(42, 42, 64, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: rgba(67, 97, 238, 0.2);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: rgba(67, 97, 238, 0.1);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(76, 201, 240, 0.2);
+            color: #4cc9f0;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+
+        .badge-warning {
+            background: rgba(248, 150, 30, 0.2);
+            color: #f8961e;
+            border: 1px solid rgba(248, 150, 30, 0.3);
+        }
+
+        .badge-danger {
+            background: rgba(247, 37, 133, 0.2);
+            color: #f72585;
+            border: 1px solid rgba(247, 37, 133, 0.3);
+        }
+
+        /* Forms */
+        .form-section {
+            background: rgba(42, 42, 64, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Autocomplete */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(42, 42, 64, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 0 0 10px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background: rgba(67, 97, 238, 0.2);
+        }
+
+        /* Unit Toggle */
+        .unit-toggle {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .unit-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--light);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .unit-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .unit-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: rgba(42, 42, 64, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            border-left: 4px solid #4cc9f0;
+        }
+
+        .toast-warning {
+            border-left: 4px solid #f8961e;
+        }
+
+        .toast-error {
+            border-left: 4px solid #f72585;
+        }
+
+        .toast-info {
+            border-left: 4px solid #4361ee;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(42, 42, 64, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .modal-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .menu-toggle {
+                display: block;
+                background: none;
+                border: none;
+                color: var(--light);
+                font-size: 1.5rem;
+                cursor: pointer;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Section visibility */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile menu toggle */
+        .menu-toggle {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+            
+            .navbar-content {
+                justify-content: space-between;
+            }
+            
+            .navbar-brand h2 {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Action buttons in tables */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+
+        /* File upload */
+        .file-upload {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* Search input */
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--light);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            color: var(--light);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .page-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animasi Kubus Nexus -->
+    <div class="nexus-cube">
+        <div class="face front"></div>
+        <div class="face back"></div>
+        <div class="face right"></div>
+        <div class="face left"></div>
+        <div class="face top"></div>
+        <div class="face bottom"></div>
+    </div>
+
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1><i class="fas fa-warehouse"></i> Inventory System</h1>
+                <p>Login untuk mengakses sistem</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Username</label>
+                    <input type="text" id="username" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="backendUrl"><i class="fas fa-link"></i> Backend URL</label>
+                    <input type="text" id="backendUrl" class="form-control" 
+                           placeholder="https://script.google.com/..." 
+                           value="" required>
+                    <small style="color: var(--gray); margin-top: 5px; display: block;">
+                        Masukkan URL Google Apps Script yang sudah di-deploy
+                    </small>
+                </div>
+                
+                <button type="submit" class="btn btn-block" id="loginBtn">
+                    <span id="loginText">Login</span>
+                    <span id="loginLoading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </span>
+                </button>
+            </form>
+            
+            <div id="loginError" style="margin-top: 20px; color: #f72585; display: none;">
+                <i class="fas fa-exclamation-circle"></i> <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard (Hidden by default) -->
+    <div id="dashboard" class="dashboard">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-content">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="navbar-brand">
+                    <i class="fas fa-warehouse"></i>
+                    <h2>Inventory System</h2>
+                </div>
+                
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">
+                        A
+                    </div>
+                    <div>
+                        <div id="userName">Administrator</div>
+                        <div style="font-size: 0.8rem; color: var(--gray);" id="userRole">Admin</div>
+                    </div>
+                    <button class="btn btn-danger" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <ul class="menu">
+                <li class="menu-item active" onclick="showSection('dashboardSection')">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </li>
+                <li class="menu-item" onclick="showSection('transaksiMasukSection')">
+                    <i class="fas fa-arrow-down"></i> Barang Masuk
+                </li>
+                <li class="menu-item" onclick="showSection('transaksiKeluarSection')">
+                    <i class="fas fa-arrow-up"></i> Barang Keluar
+                </li>
+                <li class="menu-item" onclick="showSection('stockOpnameSection')">
+                    <i class="fas fa-clipboard-check"></i> Stock Opname
+                </li>
+                <li class="menu-item" onclick="showSection('supplierSection')">
+                    <i class="fas fa-truck"></i> Supplier
+                </li>
+                <li class="menu-item" onclick="showSection('reportSection')">
+                    <i class="fas fa-chart-bar"></i> Laporan
+                </li>
+                <li class="menu-item" onclick="showSection('adminSection')">
+                    <i class="fas fa-cog"></i> Admin
+                </li>
+                <li class="menu-item" onclick="showSection('masterBarangSection')">
+                    <i class="fas fa-box"></i> Master Barang
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="section active">
+                <h1 style="margin-bottom: 30px;">Dashboard</h1>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Stats will be loaded by JavaScript -->
+                </div>
+                
+                <!-- Low Stock Alert -->
+                <div class="form-section">
+                    <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-exclamation-triangle" style="color: #f8961e;"></i> Barang Stok Menipis
+                    </h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kode Barang</th>
+                                    <th>Nama Barang</th>
+                                    <th>Stok Tersedia</th>
+                                    <th>Stok Minimal</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lowStockBody">
+                                <!-- Data will be loaded by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="form-section">
+                    <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-history"></i> Aktivitas Terakhir
+                    </h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>User</th>
+                                    <th>Aksi</th>
+                                    <th>Deskripsi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentActivityBody">
+                                <!-- Data will be loaded by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaksi Masuk Section -->
+            <div id="transaksiMasukSection" class="section">
+                <h1 style="margin-bottom: 30px;">Transaksi Barang Masuk</h1>
+                
+                <div class="form-section">
+                    <h3 style="margin-bottom: 20px;">Form Transaksi</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tanggal Transaksi</label>
+                            <input type="date" id="tmTanggal" class="form-control" value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier</label>
+                            <select id="tmSupplier" class="form-control">
+                                <option value="">Pilih Supplier</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>No. PO</label>
+                            <input type="text" id="tmNoPO" class="form-control" placeholder="Nomor Purchase Order">
+                        </div>
+                        <div class="form-group">
+                            <label>No. Surat Jalan</label>
+                            <input type="text" id="tmNoSuratJalan" class="form-control" placeholder="Nomor Surat Jalan">
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 10px 0; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
+                        <i class="fas fa-plus-circle"></i> Tambah Barang
+                    </h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group autocomplete-container">
+                            <label>Nama Barang</label>
+                            <input type="text" id="tmCariBarang" class="form-control" placeholder="Ketik nama atau kode barang...">
+                            <div class="autocomplete-results" id="tmBarangResults"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" id="tmQuantity" class="form-control" min="0.01" step="0.01" value="1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Satuan</label>
+                            <div class="unit-toggle" id="tmUnitToggle">
+                                <button type="button" class="unit-btn active">PCS</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Keterangan</label>
+                            <input type="text" id="tmKeterangan" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn btn-info" onclick="addTransaksiMasukItem()">
+                            <i class="fas fa-plus"></i> Tambah ke List
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Preview Items -->
+                <div class="form-section">
+                    <h3 style="margin-bottom: 20px;">
+                        <i class="fas fa-list"></i> Preview Barang (<span id="itemCount">0</span> items)
+                    </h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kode Barang</th>
+                                    <th>Nama Barang</th>
+                                    <th>Quantity</th>
+                                    <th>Satuan</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tmPreviewTable">
+                                <tr id="tmEmptyRow">
+                                    <td colspan="6" style="text-align: center; padding: 20px; color: var(--gray);">
+                                        <i class="fas fa-inbox"></i> Belum ada barang ditambahkan
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn btn-success" onclick="saveTransaksiMasuk()">
+                            <i class="fas fa-save"></i> Simpan Transaksi
+                        </button>
+                        <button class="btn btn-danger" onclick="clearTransaksiMasukForm()">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaksi Keluar Section -->
+            <div id="transaksiKeluarSection" class="section">
+                <h1 style="margin-bottom: 30px;">Transaksi Barang Keluar</h1>
+                <div class="form-section">
+                    <p style="color: var(--gray); text-align: center; padding: 20px;">
+                        <i class="fas fa-cogs"></i> Fitur dalam pengembangan...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Stock Opname Section -->
+            <div id="stockOpnameSection" class="section">
+                <h1 style="margin-bottom: 30px;">Stock Opname</h1>
+                <div class="form-section">
+                    <p style="color: var(--gray); text-align: center; padding: 20px;">
+                        <i class="fas fa-cogs"></i> Fitur dalam pengembangan...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Supplier Section -->
+            <div id="supplierSection" class="section">
+                <h1 style="margin-bottom: 30px;">Manajemen Supplier</h1>
+                <div class="form-section">
+                    <p style="color: var(--gray); text-align: center; padding: 20px;">
+                        <i class="fas fa-cogs"></i> Fitur dalam pengembangan...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Master Barang Section -->
+            <div id="masterBarangSection" class="section">
+                <h1 style="margin-bottom: 30px;">Master Barang</h1>
+                <div class="form-section">
+                    <p style="color: var(--gray); text-align: center; padding: 20px;">
+                        <i class="fas fa-cogs"></i> Fitur dalam pengembangan...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Report Section -->
+            <div id="reportSection" class="section">
+                <h1 style="margin-bottom: 30px;">Laporan</h1>
+                <div class="form-section">
+                    <p style="color: var(--gray); text-align: center; padding: 20px;">
+                        <i class="fas fa-cogs"></i> Fitur dalam pengembangan...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Admin Section -->
+            <div id="adminSection" class="section">
+                <h1 style="margin-bottom: 30px;">Admin Panel</h1>
+                <div class="form-section">
+                    <p style="color: var(--gray); text-align: center; padding: 20px;">
+                        <i class="fas fa-cogs"></i> Fitur dalam pengembangan...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modal Container -->
+    <div class="modal" id="modalContainer"></div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentSession = null;
+        let backendUrl = '';
+        let transaksiMasukItems = [];
+        let barangCache = {};
+        let selectedBarang = null;
+        let selectedUnit = { name: 'PCS', type: 'default', conversion: 1 };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadSavedBackendUrl();
+        });
+        
+        function loadSavedBackendUrl() {
+            const savedUrl = localStorage.getItem('inventory_backend_url');
+            if (savedUrl) {
+                document.getElementById('backendUrl').value = savedUrl;
+            }
+        }
+        
+        function saveBackendUrl(url) {
+            localStorage.setItem('inventory_backend_url', url);
+        }
+        
+        // Setup Google Apps Script API
+        function setupGASAPI(url) {
+            // Remove trailing slash if exists
+            url = url.replace(/\/$/, '');
+            
+            // Create proxy functions for GAS
+            window.gas = {
+                run: {
+                    withSuccessHandler: function(callback) {
+                        this.successCallback = callback;
+                        return this;
+                    },
+                    withFailureHandler: function(callback) {
+                        this.failureCallback = callback;
+                        return this;
+                    },
+                    authenticateUser: function(username, password) {
+                        this.callAPI('authenticateUser', { username, password });
+                        return this;
+                    },
+                    validateSession: function(session) {
+                        this.callAPI('validateSession', { session });
+                        return this;
+                    },
+                    getDashboardStats: function() {
+                        this.callAPI('getDashboardStats', {});
+                        return this;
+                    },
+                    searchBarang: function(query) {
+                        this.callAPI('searchBarang', { query });
+                        return this;
+                    },
+                    getBarangDetail: function(kodeBarang) {
+                        this.callAPI('getBarangDetail', { kodeBarang });
+                        return this;
+                    },
+                    getSuppliers: function() {
+                        this.callAPI('getSuppliers', {});
+                        return this;
+                    },
+                    saveTransaksiMasuk: function(transaksiData, session) {
+                        this.callAPI('saveTransaksiMasuk', { transaksiData, session });
+                        return this;
+                    },
+                    getActivityLog: function(session, limit) {
+                        this.callAPI('getActivityLog', { session, limit });
+                        return this;
+                    },
+                    callAPI: function(functionName, params) {
+                        const self = this;
+                        const scriptUrl = backendUrl;
+                        
+                        // Create form data
+                        const formData = new FormData();
+                        formData.append('function', functionName);
+                        formData.append('data', JSON.stringify(params));
+                        
+                        // Send request
+                        fetch(scriptUrl, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (self.successCallback) {
+                                self.successCallback(data);
+                            }
+                        })
+                        .catch(error => {
+                            if (self.failureCallback) {
+                                self.failureCallback(error);
+                            }
+                        });
+                    }
+                }
+            };
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    login();
+                });
+            }
+            
+            // Setup autocomplete for barang
+            setupBarangAutocomplete();
+        }
+        
+        // Login functions
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            backendUrl = document.getElementById('backendUrl').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoading = document.getElementById('loginLoading');
+            const loginError = document.getElementById('loginError');
+            
+            // Validate backend URL
+            if (!backendUrl || !backendUrl.includes('script.google.com')) {
+                loginError.style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'URL backend tidak valid';
+                return;
+            }
+            
+            // Save backend URL
+            saveBackendUrl(backendUrl);
+            
+            // Setup GAS API
+            setupGASAPI(backendUrl);
+            
+            // Show loading state
+            loginBtn.classList.add('loading');
+            loginText.style.display = 'none';
+            loginLoading.style.display = 'inline';
+            loginError.style.display = 'none';
+            
+            // Call authentication
+            gas.run
+                .withSuccessHandler(function(result) {
+                    loginBtn.classList.remove('loading');
+                    loginText.style.display = 'inline';
+                    loginLoading.style.display = 'none';
+                    
+                    if (result.success) {
+                        currentUser = result.user;
+                        currentSession = result.session;
+                        localStorage.setItem('inventory_session', JSON.stringify(currentSession));
+                        showDashboard();
+                        loadDashboardData();
+                        showToast('Login berhasil!', 'success');
+                    } else {
+                        loginError.style.display = 'block';
+                        document.getElementById('errorMessage').textContent = result.message;
+                        showToast(result.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    loginBtn.classList.remove('loading');
+                    loginText.style.display = 'inline';
+                    loginLoading.style.display = 'none';
+                    loginError.style.display = 'block';
+                    document.getElementById('errorMessage').textContent = 'Gagal terhubung ke server';
+                    showToast('Koneksi gagal: ' + error.message, 'error');
+                })
+                .authenticateUser(username, password);
+        }
+        
+        function logout() {
+            localStorage.removeItem('inventory_session');
+            currentUser = null;
+            currentSession = null;
+            showLogin();
+            showToast('Logout berhasil', 'success');
+        }
+        
+        // UI Navigation
+        function showLogin() {
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+        }
+        
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role;
+            document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+        
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all menu items
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Add active class to corresponding menu item
+            const activeMenuItem = Array.from(menuItems).find(item => {
+                return item.getAttribute('onclick').includes(sectionId);
+            });
+            if (activeMenuItem) {
+                activeMenuItem.classList.add('active');
+            }
+            
+            // Hide sidebar on mobile
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+            
+            // Load section data
+            switch(sectionId) {
+                case 'dashboardSection':
+                    loadDashboardData();
+                    break;
+                case 'transaksiMasukSection':
+                    loadTransaksiMasukData();
+                    break;
+            }
+        }
+        
+        // Dashboard functions
+        function loadDashboardData() {
+            if (!gas || !gas.run) {
+                showToast('Backend tidak terhubung', 'error');
+                return;
+            }
+            
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        updateDashboardStats(result.data);
+                        updateLowStockTable(result.data.barangMenipisDetail);
+                        loadRecentActivity();
+                    } else {
+                        showToast(result.message, 'error');
+                    }
+                })
+                .withFailureHandler(handleError)
+                .getDashboardStats();
+        }
+        
+        function updateDashboardStats(data) {
+            const statsGrid = document.getElementById('statsGrid');
+            if (!statsGrid) return;
+            
+            const stats = [
+                {
+                    icon: 'fas fa-boxes',
+                    value: data.totalBarang || 0,
+                    label: 'Total Barang',
+                    color: 'primary'
+                },
+                {
+                    icon: 'fas fa-warehouse',
+                    value: data.totalStok || 0,
+                    label: 'Total Stok',
+                    color: 'success'
+                },
+                {
+                    icon: 'fas fa-exclamation-triangle',
+                    value: data.barangMenipis || 0,
+                    label: 'Stok Menipis',
+                    color: 'warning'
+                },
+                {
+                    icon: 'fas fa-arrow-down',
+                    value: data.transaksiMasukHariIni || 0,
+                    label: 'Barang Masuk Hari Ini',
+                    color: 'info'
+                },
+                {
+                    icon: 'fas fa-arrow-up',
+                    value: data.transaksiKeluarHariIni || 0,
+                    label: 'Barang Keluar Hari Ini',
+                    color: 'danger'
+                },
+                {
+                    icon: 'fas fa-chart-line',
+                    value: data.topBarangKeluar ? data.topBarangKeluar.length : 0,
+                    label: 'Top Barang Keluar',
+                    color: 'secondary'
+                }
+            ];
+            
+            statsGrid.innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="${stat.icon}"></i>
+                    </div>
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+        }
+        
+        function updateLowStockTable(items) {
+            const tableBody = document.getElementById('lowStockBody');
+            if (!tableBody) return;
+            
+            if (!items || items.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px;">
+                            <i class="fas fa-check-circle" style="color: #4cc9f0;"></i> Semua stok aman
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tableBody.innerHTML = items.map(item => `
+                <tr>
+                    <td><strong>${item.kode}</strong></td>
+                    <td>${item.nama}</td>
+                    <td><span class="badge badge-danger">${item.stok}</span></td>
+                    <td>${item.stokMinimal}</td>
+                    <td>
+                        <span class="badge badge-warning">
+                            <i class="fas fa-exclamation-triangle"></i> PERHATIAN
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function loadRecentActivity() {
+            if (!currentSession) return;
+            
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        updateRecentActivity(result.data);
+                    }
+                })
+                .withFailureHandler(handleError)
+                .getActivityLog(currentSession, 10);
+        }
+        
+        function updateRecentActivity(logs) {
+            const tableBody = document.getElementById('recentActivityBody');
+            if (!tableBody || !logs) return;
+            
+            if (logs.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 20px;">
+                            Belum ada aktivitas
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tableBody.innerHTML = logs.map(log => `
+                <tr>
+                    <td style="white-space: nowrap;">
+                        ${formatDateTime(log.timestamp)}
+                    </td>
+                    <td>${log.username}</td>
+                    <td>
+                        <span class="badge ${getActionBadgeClass(log.action)}">
+                            ${log.action}
+                        </span>
+                    </td>
+                    <td>${log.description}</td>
+                </tr>
+            `).join('');
+        }
+        
+        function getActionBadgeClass(action) {
+            switch(action) {
+                case 'LOGIN': return 'badge-success';
+                case 'CREATE': return 'badge-info';
+                case 'UPDATE': return 'badge-warning';
+                case 'DELETE': return 'badge-danger';
+                default: return 'badge-success';
+            }
+        }
+        
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Transaksi Masuk functions
+        function loadTransaksiMasukData() {
+            // Load suppliers
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        updateSupplierDropdown(result.data);
+                    }
+                })
+                .withFailureHandler(handleError)
+                .getSuppliers();
+        }
+        
+        function updateSupplierDropdown(suppliers) {
+            const select = document.getElementById('tmSupplier');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Pilih Supplier</option>' +
+                (suppliers || []).filter(s => s.status === 'active')
+                .map(s => `<option value="${s.kode}">${s.nama}</option>`)
+                .join('');
+        }
+        
+        function setupBarangAutocomplete() {
+            const input = document.getElementById('tmCariBarang');
+            const results = document.getElementById('tmBarangResults');
+            
+            if (!input || !results) return;
+            
+            let activeIndex = -1;
+            let currentResults = [];
+            
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (query.length < 2) {
+                    results.style.display = 'none';
+                    return;
+                }
+                
+                // Check cache first
+                if (barangCache[query]) {
+                    showAutocompleteResults(barangCache[query]);
+                } else {
+                    gas.run
+                        .withSuccessHandler(function(result) {
+                            if (result.success) {
+                                barangCache[query] = result.data;
+                                showAutocompleteResults(result.data);
+                            }
+                        })
+                        .withFailureHandler(handleError)
+                        .searchBarang(query);
+                }
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                const items = results.querySelectorAll('.autocomplete-item');
+                
+                switch(e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                        updateActiveItem(items);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        activeIndex = Math.max(activeIndex - 1, -1);
+                        updateActiveItem(items);
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (activeIndex >= 0 && items[activeIndex]) {
+                            items[activeIndex].click();
+                        }
+                        break;
+                    case 'Escape':
+                        results.style.display = 'none';
+                        break;
+                }
+            });
+            
+            function showAutocompleteResults(data) {
+                currentResults = data || [];
+                
+                if (currentResults.length === 0) {
+                    results.innerHTML = '<div class="autocomplete-item">Tidak ditemukan</div>';
+                } else {
+                    results.innerHTML = currentResults.map((item, index) => `
+                        <div class="autocomplete-item ${index === activeIndex ? 'active' : ''}" 
+                             data-index="${index}"
+                             data-kode="${item.kode}">
+                            <strong>${item.kode}</strong> - ${item.nama}
+                            <br><small style="color: var(--gray);">${item.kategori || ''}</small>
+                        </div>
+                    `).join('');
+                }
+                results.style.display = 'block';
+                
+                // Add click listeners
+                results.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const kode = this.getAttribute('data-kode');
+                        const barang = currentResults.find(b => b.kode === kode);
+                        if (barang) {
+                            input.value = `${barang.kode} - ${barang.nama}`;
+                            results.style.display = 'none';
+                            selectBarang(barang);
+                        }
+                    });
+                });
+            }
+            
+            function updateActiveItem(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('active', index === activeIndex);
+                });
+                
+                // Scroll into view
+                if (items[activeIndex]) {
+                    items[activeIndex].scrollIntoView({
+                        block: 'nearest',
+                        behavior: 'smooth'
+                    });
+                }
+            }
+            
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !results.contains(e.target)) {
+                    results.style.display = 'none';
+                }
+            });
+        }
+        
+        function selectBarang(barang) {
+            selectedBarang = barang;
+            
+            // Get barang detail for units
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        updateUnitToggle(result.data);
+                    }
+                })
+                .withFailureHandler(handleError)
+                .getBarangDetail(barang.kode);
+        }
+        
+        function updateUnitToggle(barangData) {
+            const toggle = document.getElementById('tmUnitToggle');
+            if (!toggle) return;
+            
+            const units = [];
+            
+            // Add default unit
+            if (barangData.satuanDefault) {
+                units.push({
+                    name: barangData.satuanDefault,
+                    type: 'default',
+                    conversion: 1
+                });
+            }
+            
+            // Add alternative units if available
+            if (barangData.satuanAlternatif1 && barangData.konversi1) {
+                units.push({
+                    name: barangData.satuanAlternatif1,
+                    type: 'alternatif1',
+                    conversion: barangData.konversi1
+                });
+            }
+            
+            if (barangData.satuanAlternatif2 && barangData.konversi2) {
+                units.push({
+                    name: barangData.satuanAlternatif2,
+                    type: 'alternatif2',
+                    conversion: barangData.konversi2
+                });
+            }
+            
+            if (units.length === 0) {
+                units.push({
+                    name: 'PCS',
+                    type: 'default',
+                    conversion: 1
+                });
+            }
+            
+            // Update UI
+            toggle.innerHTML = units.map((unit, index) => `
+                <button type="button" class="unit-btn ${index === 0 ? 'active' : ''}"
+                        onclick="selectUnit(this, '${unit.type}', ${unit.conversion})">
+                    ${unit.name}
+                </button>
+            `).join('');
+            
+            // Store selected unit
+            selectedUnit = units[0];
+        }
+        
+        function addTransaksiMasukItem() {
+            if (!selectedBarang) {
+                showToast('Pilih barang terlebih dahulu', 'warning');
+                return;
+            }
+            
+            const quantityInput = document.getElementById('tmQuantity');
+            const quantity = parseFloat(quantityInput.value);
+            const keterangan = document.getElementById('tmKeterangan').value;
+            
+            if (!quantity || quantity <= 0) {
+                showToast('Quantity harus lebih dari 0', 'warning');
+                quantityInput.focus();
+                return;
+            }
+            
+            const item = {
+                kodeBarang: selectedBarang.kode,
+                namaBarang: selectedBarang.nama,
+                quantity: quantity,
+                satuan: selectedUnit.name,
+                satuanType: selectedUnit.type,
+                conversion: selectedUnit.conversion,
+                keterangan: keterangan
+            };
+            
+            transaksiMasukItems.push(item);
+            updateTransaksiMasukPreview();
+            
+            // Reset form
+            document.getElementById('tmCariBarang').value = '';
+            document.getElementById('tmQuantity').value = 1;
+            document.getElementById('tmKeterangan').value = '';
+            selectedBarang = null;
+            
+            showToast('Barang ditambahkan ke list', 'success');
+        }
+        
+        function updateTransaksiMasukPreview() {
+            const tableBody = document.getElementById('tmPreviewTable');
+            const emptyRow = document.getElementById('tmEmptyRow');
+            const itemCount = document.getElementById('itemCount');
+            
+            if (emptyRow) emptyRow.remove();
+            
+            if (transaksiMasukItems.length === 0) {
+                tableBody.innerHTML = `
+                    <tr id="tmEmptyRow">
+                        <td colspan="6" style="text-align: center; padding: 20px; color: var(--gray);">
+                            <i class="fas fa-inbox"></i> Belum ada barang ditambahkan
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tableBody.innerHTML = transaksiMasukItems.map((item, index) => `
+                    <tr>
+                        <td><strong>${item.kodeBarang}</strong></td>
+                        <td>${item.namaBarang}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.satuan}</td>
+                        <td>${item.keterangan || '-'}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="removeTransaksiMasukItem(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            itemCount.textContent = transaksiMasukItems.length;
+        }
+        
+        function removeTransaksiMasukItem(index) {
+            transaksiMasukItems.splice(index, 1);
+            updateTransaksiMasukPreview();
+            showToast('Barang dihapus dari list', 'success');
+        }
+        
+        function saveTransaksiMasuk() {
+            if (transaksiMasukItems.length === 0) {
+                showToast('Tidak ada barang di list', 'warning');
+                return;
+            }
+            
+            const tanggal = document.getElementById('tmTanggal').value;
+            const kodeSupplier = document.getElementById('tmSupplier').value;
+            const noPO = document.getElementById('tmNoPO').value;
+            const noSuratJalan = document.getElementById('tmNoSuratJalan').value;
+            
+            if (!kodeSupplier) {
+                showToast('Pilih supplier terlebih dahulu', 'warning');
+                return;
+            }
+            
+            if (!tanggal) {
+                showToast('Tanggal transaksi harus diisi', 'warning');
+                return;
+            }
+            
+            const transaksiData = {
+                tanggal: tanggal,
+                kodeSupplier: kodeSupplier,
+                noPO: noPO,
+                noSuratJalan: noSuratJalan,
+                items: transaksiMasukItems.map(item => ({
+                    kodeBarang: item.kodeBarang,
+                    quantity: item.quantity,
+                    satuan: item.satuan,
+                    keterangan: item.keterangan
+                }))
+            };
+            
+            // Show confirmation modal
+            showModal('Konfirmasi', `
+                <p>Simpan transaksi barang masuk?</p>
+                <p><strong>Jumlah item:</strong> ${transaksiMasukItems.length}</p>
+                <p><strong>Supplier:</strong> ${document.getElementById('tmSupplier').options[document.getElementById('tmSupplier').selectedIndex].text}</p>
+                <p><strong>Tanggal:</strong> ${formatDate(tanggal)}</p>
+            `, [
+                {
+                    text: 'Batal',
+                    class: 'btn',
+                    onclick: 'closeModal()'
+                },
+                {
+                    text: 'Simpan',
+                    class: 'btn btn-success',
+                    onclick: `confirmSaveTransaksiMasuk(${JSON.stringify(transaksiData)})`
+                }
+            ]);
+        }
+        
+        function confirmSaveTransaksiMasuk(transaksiData) {
+            closeModal();
+            
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showToast(result.message + ' - No. Transaksi: ' + result.noTransaksi, 'success');
+                        clearTransaksiMasukForm();
+                        loadDashboardData(); // Refresh stats
+                    } else {
+                        showToast(result.message, 'error');
+                    }
+                })
+                .withFailureHandler(handleError)
+                .saveTransaksiMasuk(transaksiData, currentSession);
+        }
+        
+        function clearTransaksiMasukForm() {
+            transaksiMasukItems = [];
+            updateTransaksiMasukPreview();
+            document.getElementById('tmTanggal').value = new Date().toISOString().split('T')[0];
+            document.getElementById('tmSupplier').selectedIndex = 0;
+            document.getElementById('tmNoPO').value = '';
+            document.getElementById('tmNoSuratJalan').value = '';
+            document.getElementById('tmCariBarang').value = '';
+            document.getElementById('tmQuantity').value = 1;
+            document.getElementById('tmKeterangan').value = '';
+            selectedBarang = null;
+            showToast('Form telah direset', 'info');
+        }
+        
+        // Modal functions
+        function showModal(title, content, buttons) {
+            const modal = document.getElementById('modalContainer');
+            const modalContent = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                    <div class="modal-footer">
+                        ${buttons.map(btn => `
+                            <button class="${btn.class}" onclick="${btn.onclick}">${btn.text}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            modal.innerHTML = modalContent;
+            modal.classList.add('show');
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('modalContainer');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.innerHTML = '';
+            }, 300);
+        }
+        
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const icons = {
+                success: 'fas fa-check-circle',
+                warning: 'fas fa-exclamation-triangle',
+                error: 'fas fa-times-circle',
+                info: 'fas fa-info-circle'
+            };
+            
+            const colors = {
+                success: '#4cc9f0',
+                warning: '#f8961e',
+                error: '#f72585',
+                info: '#4361ee'
+            };
+            
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="${icons[type]}" style="color: ${colors[type]};"></i>
+                <div style="flex: 1;">${message}</div>
+                <button onclick="removeToast('${toastId}')" style="background: none; border: none; color: var(--gray); cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                removeToast(toastId);
+            }, 5000);
+        }
+        
+        function removeToast(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }
+        }
+        
+        // Helper functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+        
+        function handleError(error) {
+            console.error('Error:', error);
+            showToast('Terjadi kesalahan: ' + (error.message || 'Unknown error'), 'error');
+        }
+        
+        // Export functions for onclick events
+        window.showSection = showSection;
+        window.logout = logout;
+        window.addTransaksiMasukItem = addTransaksiMasukItem;
+        window.removeTransaksiMasukItem = removeTransaksiMasukItem;
+        window.saveTransaksiMasuk = saveTransaksiMasuk;
+        window.clearTransaksiMasukForm = clearTransaksiMasukForm;
+        window.selectUnit = function(button, type, conversion) {
+            // Remove active class from all buttons
+            button.parentElement.querySelectorAll('.unit-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            button.classList.add('active');
+            
+            // Update selected unit
+            selectedUnit = {
+                name: button.textContent.trim(),
+                type: type,
+                conversion: conversion
+            };
+        };
+        window.closeModal = closeModal;
+        window.confirmSaveTransaksiMasuk = confirmSaveTransaksiMasuk;
+        window.toggleSidebar = toggleSidebar;
+        window.removeToast = removeToast;
+        
+        // Initialize on load
+        window.onload = function() {
+            // Check if there's a saved session
+            const savedSession = localStorage.getItem('inventory_session');
+            if (savedSession) {
+                try {
+                    const session = JSON.parse(savedSession);
+                    // Try to validate session
+                    const backendUrl = localStorage.getItem('inventory_backend_url');
+                    if (backendUrl) {
+                        document.getElementById('backendUrl').value = backendUrl;
+                        setupGASAPI(backendUrl);
+                        validateSession(session);
+                    }
+                } catch (e) {
+                    console.log('No valid session found');
+                }
+            }
+        };
+        
+        function validateSession(session) {
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.valid) {
+                        currentUser = result.session;
+                        currentSession = result.session;
+                        showDashboard();
+                        loadDashboardData();
+                    }
+                })
+                .withFailureHandler(function() {
+                    localStorage.removeItem('inventory_session');
+                })
+                .validateSession(session);
+        }
+    </script>
+</body>
+</html>
