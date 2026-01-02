@@ -1,0 +1,12 @@
+{
+  "name": "inventory-system",
+  "version": "1.0.0",
+  "description": "Inventory System Frontend",
+  "scripts": {
+    "dev": "serve ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
