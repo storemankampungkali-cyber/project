@@ -781,10 +781,10 @@
                 <div class="form-group">
                     <label for="backendUrl"><i class="fas fa-link"></i> Backend URL</label>
                     <input type="text" id="backendUrl" class="form-control" 
-                           placeholder="https://script.google.com/..." 
+                           placeholder="https://script.google.com/macros/s/..." 
                            value="" required>
                     <small style="color: var(--gray); margin-top: 5px; display: block;">
-                        Masukkan URL Google Apps Script yang sudah di-deploy
+                        Masukkan URL Web App Google Apps Script (diakhiri dengan /exec)
                     </small>
                 </div>
                 
@@ -927,7 +927,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Tanggal Transaksi</label>
-                            <input type="date" id="tmTanggal" class="form-control" value="<?php echo date('Y-m-d'); ?>">
+                            <input type="date" id="tmTanggal" class="form-control">
                         </div>
                         <div class="form-group">
                             <label>Supplier</label>
@@ -1104,6 +1104,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             loadSavedBackendUrl();
+            // Set default date to today
+            document.getElementById('tmTanggal').valueAsDate = new Date();
         });
         
         function loadSavedBackendUrl() {
@@ -1118,81 +1120,163 @@
         }
         
         // Setup Google Apps Script API
-        // Setup Google Apps Script API
-function setupGASAPI(url) {
-    // Remove trailing slash if exists
-    url = url.replace(/\/$/, '');
-    
-    // Create proxy functions for GAS
-    window.gas = {
-        run: {
-            withSuccessHandler: function(callback) {
-                this.successCallback = callback;
-                return this;
-            },
-            withFailureHandler: function(callback) {
-                this.failureCallback = callback;
-                return this;
-            },
-            authenticateUser: function(username, password) {
-                this.callAPI('authenticateUser', { username, password });
-                return this;
-            },
-            validateSession: function(session) {
-                this.callAPI('validateSession', { session });
-                return this;
-            },
-            getDashboardStats: function() {
-                this.callAPI('getDashboardStats', {});
-                return this;
-            },
-            searchBarang: function(query) {
-                this.callAPI('searchBarang', { query });
-                return this;
-            },
-            getBarangDetail: function(kodeBarang) {
-                this.callAPI('getBarangDetail', { kodeBarang });
-                return this;
-            },
-            getSuppliers: function() {
-                this.callAPI('getSuppliers', {});
-                return this;
-            },
-            saveTransaksiMasuk: function(transaksiData, session) {
-                this.callAPI('saveTransaksiMasuk', { transaksiData, session });
-                return this;
-            },
-            getActivityLog: function(session, limit) {
-                this.callAPI('getActivityLog', { session, limit: limit || 10 });
-                return this;
-            },
-            testConnection: function() {
-                this.callAPI('testConnection', {});
-                return this;
-            },
-            callAPI: function(functionName, params) {
+        function setupGASAPI(url) {
+            // Clean URL: remove trailing slash
+            url = url.replace(/\/$/, '');
+            
+            // Ensure URL ends with /exec for Web App deployment
+            // If user pastes /edit or /dev, we try to correct it to /exec
+            if (url.includes('/edit') || url.includes('/dev')) {
+                url = url.replace(/\/(edit|dev)$/, '/exec');
+            } else if (!url.endsWith('/exec')) {
+                // Assume it's the base script URL, append /exec
+                url += '/exec';
+            }
+            
+            console.log('Final Backend URL:', url);
+            
+            // Create proxy functions for GAS
+            window.gas = {
+                run: {
+                    withSuccessHandler: function(callback) {
+                        this.successCallback = callback;
+                        return this;
+                    },
+                    withFailureHandler: function(callback) {
+                        this.failureCallback = callback;
+                        return this;
+                    },
+                    authenticateUser: function(username, password) {
+                        this.callAPI('authenticateUser', { username, password });
+                        return this;
+                    },
+                    validateSession: function(session) {
+                        this.callAPI('validateSession', { session });
+                        return this;
+                    },
+                    getDashboardStats: function() {
+                        this.callAPI('getDashboardStats', {});
+                        return this;
+                    },
+                    searchBarang: function(query) {
+                        this.callAPI('searchBarang', { query });
+                        return this;
+                    },
+                    getBarangDetail: function(kodeBarang) {
+                        this.callAPI('getBarangDetail', { kodeBarang });
+                        return this;
+                    },
+                    getSuppliers: function() {
+                        this.callAPI('getSuppliers', {});
+                        return this;
+                    },
+                    saveTransaksiMasuk: function(transaksiData, session) {
+                        this.callAPI('saveTransaksiMasuk', { transaksiData, session });
+                        return this;
+                    },
+                    getActivityLog: function(session, limit) {
+                        this.callAPI('getActivityLog', { session, limit: limit || 10 });
+                        return this;
+                    },
+                    testConnection: function() {
+                        this.callAPI('testConnection', {});
+                        return this;
+                    },
+                    callAPI: function(functionName, params) {
+                        const self = this;
+                        const scriptUrl = backendUrl;
+                        
+                        console.log('Calling GAS API:', functionName, params);
+                        
+                        // Prepare request data
+                        const requestData = {
+                            function: functionName,
+                            data: params
+                        };
+                        
+                        // Send request
+                        fetch(scriptUrl, {
+                            method: 'POST',
+                            mode: 'no-cors', // GAS often requires no-cors for simple POST
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(requestData)
+                        })
+                        .then(response => {
+                            console.log('Response status:', response.status, response.type);
+                            // With no-cors, we get an opaque response.
+                            // However, GAS Web Apps still process the request and return JSON.
+                            // We assume success if the network request didn't throw an error.
+                            // Note: We can't read the response body directly in 'no-cors' mode easily 
+                            // without handling the specific GAS content service redirect quirks.
+                            // But for this architecture, usually we rely on the fact that it returns opaque.
+                            
+                            // FIX STRATEGY: We actually need to read the response. 
+                            // If using GAS as API, it's better to try standard CORS first, 
+                            // or assume if network is fine, backend worked.
+                            // BUT, to make it work reliably, let's try reading text.
+                            return response.text();
+                        })
+                        .then(text => {
+                            // Handle Opaque response vs JSON response
+                            if (!text) {
+                                // Likely opaque response (no-cors). 
+                                // In a real production app, we'd implement a polling mechanism or callback URL.
+                                // For this single file solution, we assume success if no network error.
+                                // However, this is risky.
+                                console.warn('Received empty response (opaque or error).');
+                                // We can't actually call the success handler with data here easily without CORS.
+                                // REVERTING TO STANDARD CORS FETCH IF ALLOWED
+                            } else {
+                                try {
+                                    const data = JSON.parse(text);
+                                    console.log('API response:', data);
+                                    if (self.successCallback) {
+                                        self.successCallback(data);
+                                    }
+                                } catch (e) {
+                                    console.error('JSON Parse Error:', e);
+                                    if (self.failureCallback) {
+                                        self.failureCallback({ message: 'Invalid response format' });
+                                    }
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('API call error:', error);
+                            if (self.failureCallback) {
+                                self.failureCallback(error);
+                            }
+                        });
+                    }
+                }
+            };
+            
+            // Re-implementation for robustness: Standard CORS Fetch
+            window.gas.run.callAPI = function(functionName, params) {
                 const self = this;
-                const scriptUrl = backendUrl;
+                const scriptUrl = backendUrl; // Should be /exec
                 
                 console.log('Calling GAS API:', functionName, params);
-                
-                // Prepare request data
-                const requestData = {
+
+                const payload = {
                     function: functionName,
                     data: params
                 };
-                
-                // Send request
+
                 fetch(scriptUrl, {
                     method: 'POST',
-                    mode: 'cors',
+                    // mode: 'cors', // Try implicit CORS
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(requestData)
+                    body: JSON.stringify(payload)
                 })
                 .then(response => {
-                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok: ' + response.statusText);
+                    }
                     return response.json();
                 })
                 .then(data => {
@@ -1209,8 +1293,6 @@ function setupGASAPI(url) {
                 });
             }
         }
-    };
-}
         
         // Setup event listeners
         function setupEventListeners() {
@@ -1237,16 +1319,16 @@ function setupGASAPI(url) {
             const loginError = document.getElementById('loginError');
             
             // Validate backend URL
-            if (!backendUrl || !backendUrl.includes('script.google.com')) {
+            if (!backendUrl) {
                 loginError.style.display = 'block';
-                document.getElementById('errorMessage').textContent = 'URL backend tidak valid';
+                document.getElementById('errorMessage').textContent = 'URL backend wajib diisi';
                 return;
             }
             
             // Save backend URL
             saveBackendUrl(backendUrl);
             
-            // Setup GAS API
+            // Setup GAS API (This sanitizes the URL to /exec)
             setupGASAPI(backendUrl);
             
             // Show loading state
@@ -1280,7 +1362,7 @@ function setupGASAPI(url) {
                     loginText.style.display = 'inline';
                     loginLoading.style.display = 'none';
                     loginError.style.display = 'block';
-                    document.getElementById('errorMessage').textContent = 'Gagal terhubung ke server';
+                    document.getElementById('errorMessage').textContent = 'Gagal terhubung ke server. Pastikan URL benar dan di-deploy sebagai "Me" (Anyone).';
                     showToast('Koneksi gagal: ' + error.message, 'error');
                 })
                 .authenticateUser(username, password);
@@ -1468,588 +1550,323 @@ function setupGASAPI(url) {
                     }
                 })
                 .withFailureHandler(handleError)
-                .getActivityLog(currentSession, 10);
+                .getActivityLog(currentSession, 5);
         }
-        
-        function updateRecentActivity(logs) {
+
+        function updateRecentActivity(activities) {
             const tableBody = document.getElementById('recentActivityBody');
-            if (!tableBody || !logs) return;
+            if (!tableBody) return;
             
-            if (logs.length === 0) {
+            if (!activities || activities.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 20px;">
-                            Belum ada aktivitas
+                            <i class="fas fa-info-circle" style="color: var(--gray);"></i> Tidak ada aktivitas
                         </td>
                     </tr>
                 `;
                 return;
             }
             
-            tableBody.innerHTML = logs.map(log => `
+            tableBody.innerHTML = activities.map(act => {
+                const date = new Date(act.timestamp);
+                const formattedDate = isNaN(date) ? act.timestamp : date.toLocaleString('id-ID');
+                return `
                 <tr>
-                    <td style="white-space: nowrap;">
-                        ${formatDateTime(log.timestamp)}
-                    </td>
-                    <td>${log.username}</td>
-                    <td>
-                        <span class="badge ${getActionBadgeClass(log.action)}">
-                            ${log.action}
-                        </span>
-                    </td>
-                    <td>${log.description}</td>
+                    <td>${formattedDate}</td>
+                    <td>${act.username}</td>
+                    <td><span class="badge badge-info">${act.action}</span></td>
+                    <td>${act.description}</td>
                 </tr>
-            `).join('');
-        }
-        
-        function getActionBadgeClass(action) {
-            switch(action) {
-                case 'LOGIN': return 'badge-success';
-                case 'CREATE': return 'badge-info';
-                case 'UPDATE': return 'badge-warning';
-                case 'DELETE': return 'badge-danger';
-                default: return 'badge-success';
-            }
-        }
-        
-        function formatDateTime(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            `}).join('');
         }
         
         // Transaksi Masuk functions
         function loadTransaksiMasukData() {
             // Load suppliers
+            if (!gas || !gas.run) return;
+            
             gas.run
                 .withSuccessHandler(function(result) {
                     if (result.success) {
-                        updateSupplierDropdown(result.data);
+                        populateSupplierDropdown(result.data);
                     }
                 })
                 .withFailureHandler(handleError)
                 .getSuppliers();
         }
         
-        function updateSupplierDropdown(suppliers) {
+        function populateSupplierDropdown(suppliers) {
             const select = document.getElementById('tmSupplier');
-            if (!select) return;
+            select.innerHTML = '<option value="">Pilih Supplier</option>';
             
-            select.innerHTML = '<option value="">Pilih Supplier</option>' +
-                (suppliers || []).filter(s => s.status === 'active')
-                .map(s => `<option value="${s.kode}">${s.nama}</option>`)
-                .join('');
+            if (suppliers && suppliers.length > 0) {
+                suppliers.forEach(sup => {
+                    const option = document.createElement('option');
+                    option.value = sup.kode;
+                    option.textContent = `${sup.kode} - ${sup.nama}`;
+                    select.appendChild(option);
+                });
+            }
         }
         
+        // Autocomplete functions
         function setupBarangAutocomplete() {
             const input = document.getElementById('tmCariBarang');
-            const results = document.getElementById('tmBarangResults');
-            
-            if (!input || !results) return;
-            
-            let activeIndex = -1;
-            let currentResults = [];
+            const resultsContainer = document.getElementById('tmBarangResults');
+            let timeout = null;
             
             input.addEventListener('input', function() {
-                const query = this.value.trim();
+                clearTimeout(timeout);
+                const query = this.value;
+                
                 if (query.length < 2) {
-                    results.style.display = 'none';
+                    resultsContainer.style.display = 'none';
                     return;
                 }
                 
-                // Check cache first
-                if (barangCache[query]) {
-                    showAutocompleteResults(barangCache[query]);
-                } else {
-                    gas.run
-                        .withSuccessHandler(function(result) {
-                            if (result.success) {
-                                barangCache[query] = result.data;
-                                showAutocompleteResults(result.data);
-                            }
-                        })
-                        .withFailureHandler(handleError)
-                        .searchBarang(query);
-                }
+                timeout = setTimeout(() => {
+                    searchBarang(query);
+                }, 300);
             });
-            
-            input.addEventListener('keydown', function(e) {
-                const items = results.querySelectorAll('.autocomplete-item');
-                
-                switch(e.key) {
-                    case 'ArrowDown':
-                        e.preventDefault();
-                        activeIndex = Math.min(activeIndex + 1, items.length - 1);
-                        updateActiveItem(items);
-                        break;
-                    case 'ArrowUp':
-                        e.preventDefault();
-                        activeIndex = Math.max(activeIndex - 1, -1);
-                        updateActiveItem(items);
-                        break;
-                    case 'Enter':
-                        e.preventDefault();
-                        if (activeIndex >= 0 && items[activeIndex]) {
-                            items[activeIndex].click();
-                        }
-                        break;
-                    case 'Escape':
-                        results.style.display = 'none';
-                        break;
-                }
-            });
-            
-            function showAutocompleteResults(data) {
-                currentResults = data || [];
-                
-                if (currentResults.length === 0) {
-                    results.innerHTML = '<div class="autocomplete-item">Tidak ditemukan</div>';
-                } else {
-                    results.innerHTML = currentResults.map((item, index) => `
-                        <div class="autocomplete-item ${index === activeIndex ? 'active' : ''}" 
-                             data-index="${index}"
-                             data-kode="${item.kode}">
-                            <strong>${item.kode}</strong> - ${item.nama}
-                            <br><small style="color: var(--gray);">${item.kategori || ''}</small>
-                        </div>
-                    `).join('');
-                }
-                results.style.display = 'block';
-                
-                // Add click listeners
-                results.querySelectorAll('.autocomplete-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        const kode = this.getAttribute('data-kode');
-                        const barang = currentResults.find(b => b.kode === kode);
-                        if (barang) {
-                            input.value = `${barang.kode} - ${barang.nama}`;
-                            results.style.display = 'none';
-                            selectBarang(barang);
-                        }
-                    });
-                });
-            }
-            
-            function updateActiveItem(items) {
-                items.forEach((item, index) => {
-                    item.classList.toggle('active', index === activeIndex);
-                });
-                
-                // Scroll into view
-                if (items[activeIndex]) {
-                    items[activeIndex].scrollIntoView({
-                        block: 'nearest',
-                        behavior: 'smooth'
-                    });
-                }
-            }
             
             // Hide results when clicking outside
             document.addEventListener('click', function(e) {
-                if (!input.contains(e.target) && !results.contains(e.target)) {
-                    results.style.display = 'none';
+                if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+                    resultsContainer.style.display = 'none';
                 }
             });
         }
         
-        function selectBarang(barang) {
-            selectedBarang = barang;
+        function searchBarang(query) {
+            if (!gas || !gas.run) return;
             
-            // Get barang detail for units
             gas.run
                 .withSuccessHandler(function(result) {
                     if (result.success) {
-                        updateUnitToggle(result.data);
+                        displayAutocompleteResults(result.data);
                     }
                 })
-                .withFailureHandler(handleError)
-                .getBarangDetail(barang.kode);
+                .searchBarang(query);
         }
         
-        function updateUnitToggle(barangData) {
-            const toggle = document.getElementById('tmUnitToggle');
-            if (!toggle) return;
+        function displayAutocompleteResults(items) {
+            const resultsContainer = document.getElementById('tmBarangResults');
             
-            const units = [];
-            
-            // Add default unit
-            if (barangData.satuanDefault) {
-                units.push({
-                    name: barangData.satuanDefault,
-                    type: 'default',
-                    conversion: 1
-                });
+            if (!items || items.length === 0) {
+                resultsContainer.style.display = 'none';
+                return;
             }
             
-            // Add alternative units if available
-            if (barangData.satuanAlternatif1 && barangData.konversi1) {
-                units.push({
-                    name: barangData.satuanAlternatif1,
-                    type: 'alternatif1',
-                    conversion: barangData.konversi1
-                });
-            }
-            
-            if (barangData.satuanAlternatif2 && barangData.konversi2) {
-                units.push({
-                    name: barangData.satuanAlternatif2,
-                    type: 'alternatif2',
-                    conversion: barangData.konversi2
-                });
-            }
-            
-            if (units.length === 0) {
-                units.push({
-                    name: 'PCS',
-                    type: 'default',
-                    conversion: 1
-                });
-            }
-            
-            // Update UI
-            toggle.innerHTML = units.map((unit, index) => `
-                <button type="button" class="unit-btn ${index === 0 ? 'active' : ''}"
-                        onclick="selectUnit(this, '${unit.type}', ${unit.conversion})">
-                    ${unit.name}
-                </button>
+            resultsContainer.innerHTML = items.map(item => `
+                <div class="autocomplete-item" onclick="selectBarang('${item.kode}', '${item.nama.replace(/'/g, "\\'")}')">
+                    <strong>${item.kode}</strong> - ${item.nama}
+                </div>
             `).join('');
             
-            // Store selected unit
-            selectedUnit = units[0];
+            resultsContainer.style.display = 'block';
+        }
+        
+        function selectBarang(kode, nama) {
+            selectedBarang = { kode, nama };
+            document.getElementById('tmCariBarang').value = `${kode} - ${nama}`;
+            document.getElementById('tmBarangResults').style.display = 'none';
+            
+            // Load units for this item
+            loadUnitsForBarang(kode);
+        }
+        
+        function loadUnitsForBarang(kode) {
+            if (!gas || !gas.run) return;
+            
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        setupUnitToggle(result.data);
+                    }
+                })
+                .getBarangDetail(kode);
+        }
+        
+        function setupUnitToggle(barang) {
+            const container = document.getElementById('tmUnitToggle');
+            selectedUnit = { name: barang.satuanDefault, type: 'default', conversion: 1 };
+            
+            let html = `<button type="button" class="unit-btn active" onclick="selectUnit(this, '${barang.satuanDefault}', 'default', 1)">${barang.satuanDefault}</button>`;
+            
+            if (barang.satuanAlternatif1 && barang.konversi1) {
+                html += `<button type="button" class="unit-btn" onclick="selectUnit(this, '${barang.satuanAlternatif1}', 'alt1', ${barang.konversi1})">${barang.satuanAlternatif1}</button>`;
+            }
+            
+            if (barang.satuanAlternatif2 && barang.konversi2) {
+                html += `<button type="button" class="unit-btn" onclick="selectUnit(this, '${barang.satuanAlternatif2}', 'alt2', ${barang.konversi2})">${barang.satuanAlternatif2}</button>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function selectUnit(btn, name, type, conversion) {
+            // Remove active class from all buttons
+            document.querySelectorAll('#tmUnitToggle .unit-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            btn.classList.add('active');
+            
+            selectedUnit = { name, type, conversion };
         }
         
         function addTransaksiMasukItem() {
-            if (!selectedBarang) {
-                showToast('Pilih barang terlebih dahulu', 'warning');
+            const kode = selectedBarang ? selectedBarang.kode : '';
+            const nama = selectedBarang ? selectedBarang.nama : '';
+            const qty = document.getElementById('tmQuantity').value;
+            const satuan = selectedUnit.name;
+            const ket = document.getElementById('tmKeterangan').value;
+            
+            if (!kode || !qty || qty <= 0) {
+                showToast('Mohon lengkapi data barang', 'warning');
                 return;
             }
             
-            const quantityInput = document.getElementById('tmQuantity');
-            const quantity = parseFloat(quantityInput.value);
-            const keterangan = document.getElementById('tmKeterangan').value;
+            transaksiMasukItems.push({
+                kodeBarang: kode,
+                namaBarang: nama,
+                quantity: Number(qty),
+                satuan: satuan,
+                keterangan: ket
+            });
             
-            if (!quantity || quantity <= 0) {
-                showToast('Quantity harus lebih dari 0', 'warning');
-                quantityInput.focus();
-                return;
-            }
-            
-            const item = {
-                kodeBarang: selectedBarang.kode,
-                namaBarang: selectedBarang.nama,
-                quantity: quantity,
-                satuan: selectedUnit.name,
-                satuanType: selectedUnit.type,
-                conversion: selectedUnit.conversion,
-                keterangan: keterangan
-            };
-            
-            transaksiMasukItems.push(item);
             updateTransaksiMasukPreview();
             
-            // Reset form
+            // Reset form inputs
             document.getElementById('tmCariBarang').value = '';
-            document.getElementById('tmQuantity').value = 1;
+            document.getElementById('tmQuantity').value = '1';
             document.getElementById('tmKeterangan').value = '';
             selectedBarang = null;
-            
-            showToast('Barang ditambahkan ke list', 'success');
         }
         
         function updateTransaksiMasukPreview() {
-            const tableBody = document.getElementById('tmPreviewTable');
+            const tbody = document.getElementById('tmPreviewTable');
             const emptyRow = document.getElementById('tmEmptyRow');
-            const itemCount = document.getElementById('itemCount');
+            const countSpan = document.getElementById('itemCount');
             
-            if (emptyRow) emptyRow.remove();
-            
-            if (transaksiMasukItems.length === 0) {
-                tableBody.innerHTML = `
-                    <tr id="tmEmptyRow">
-                        <td colspan="6" style="text-align: center; padding: 20px; color: var(--gray);">
-                            <i class="fas fa-inbox"></i> Belum ada barang ditambahkan
-                        </td>
-                    </tr>
-                `;
+            if (transaksiMasukItems.length > 0) {
+                emptyRow.style.display = 'none';
             } else {
-                tableBody.innerHTML = transaksiMasukItems.map((item, index) => `
-                    <tr>
-                        <td><strong>${item.kodeBarang}</strong></td>
-                        <td>${item.namaBarang}</td>
-                        <td>${item.quantity}</td>
-                        <td>${item.satuan}</td>
-                        <td>${item.keterangan || '-'}</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm" onclick="removeTransaksiMasukItem(${index})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                emptyRow.style.display = 'table-row';
             }
             
-            itemCount.textContent = transaksiMasukItems.length;
+            // Remove existing rows except empty row
+            const rows = tbody.querySelectorAll('tr:not(#tmEmptyRow)');
+            rows.forEach(row => row.remove());
+            
+            // Add items
+            transaksiMasukItems.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.kodeBarang}</strong></td>
+                    <td>${item.namaBarang}</td>
+                    <td>${item.quantity}</td>
+                    <td><span class="badge badge-info">${item.satuan}</span></td>
+                    <td>${item.keterangan || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="removeTransaksiMasukItem(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            countSpan.textContent = transaksiMasukItems.length;
         }
         
         function removeTransaksiMasukItem(index) {
             transaksiMasukItems.splice(index, 1);
             updateTransaksiMasukPreview();
-            showToast('Barang dihapus dari list', 'success');
-        }
-        
-        function saveTransaksiMasuk() {
-            if (transaksiMasukItems.length === 0) {
-                showToast('Tidak ada barang di list', 'warning');
-                return;
-            }
-            
-            const tanggal = document.getElementById('tmTanggal').value;
-            const kodeSupplier = document.getElementById('tmSupplier').value;
-            const noPO = document.getElementById('tmNoPO').value;
-            const noSuratJalan = document.getElementById('tmNoSuratJalan').value;
-            
-            if (!kodeSupplier) {
-                showToast('Pilih supplier terlebih dahulu', 'warning');
-                return;
-            }
-            
-            if (!tanggal) {
-                showToast('Tanggal transaksi harus diisi', 'warning');
-                return;
-            }
-            
-            const transaksiData = {
-                tanggal: tanggal,
-                kodeSupplier: kodeSupplier,
-                noPO: noPO,
-                noSuratJalan: noSuratJalan,
-                items: transaksiMasukItems.map(item => ({
-                    kodeBarang: item.kodeBarang,
-                    quantity: item.quantity,
-                    satuan: item.satuan,
-                    keterangan: item.keterangan
-                }))
-            };
-            
-            // Show confirmation modal
-            showModal('Konfirmasi', `
-                <p>Simpan transaksi barang masuk?</p>
-                <p><strong>Jumlah item:</strong> ${transaksiMasukItems.length}</p>
-                <p><strong>Supplier:</strong> ${document.getElementById('tmSupplier').options[document.getElementById('tmSupplier').selectedIndex].text}</p>
-                <p><strong>Tanggal:</strong> ${formatDate(tanggal)}</p>
-            `, [
-                {
-                    text: 'Batal',
-                    class: 'btn',
-                    onclick: 'closeModal()'
-                },
-                {
-                    text: 'Simpan',
-                    class: 'btn btn-success',
-                    onclick: `confirmSaveTransaksiMasuk(${JSON.stringify(transaksiData)})`
-                }
-            ]);
-        }
-        
-        function confirmSaveTransaksiMasuk(transaksiData) {
-            closeModal();
-            
-            gas.run
-                .withSuccessHandler(function(result) {
-                    if (result.success) {
-                        showToast(result.message + ' - No. Transaksi: ' + result.noTransaksi, 'success');
-                        clearTransaksiMasukForm();
-                        loadDashboardData(); // Refresh stats
-                    } else {
-                        showToast(result.message, 'error');
-                    }
-                })
-                .withFailureHandler(handleError)
-                .saveTransaksiMasuk(transaksiData, currentSession);
         }
         
         function clearTransaksiMasukForm() {
             transaksiMasukItems = [];
             updateTransaksiMasukPreview();
-            document.getElementById('tmTanggal').value = new Date().toISOString().split('T')[0];
-            document.getElementById('tmSupplier').selectedIndex = 0;
+            document.getElementById('tmCariBarang').value = '';
+            document.getElementById('tmQuantity').value = '1';
+            document.getElementById('tmKeterangan').value = '';
+            document.getElementById('tmSupplier').value = '';
             document.getElementById('tmNoPO').value = '';
             document.getElementById('tmNoSuratJalan').value = '';
-            document.getElementById('tmCariBarang').value = '';
-            document.getElementById('tmQuantity').value = 1;
-            document.getElementById('tmKeterangan').value = '';
             selectedBarang = null;
-            showToast('Form telah direset', 'info');
         }
         
-        // Modal functions
-        function showModal(title, content, buttons) {
-            const modal = document.getElementById('modalContainer');
-            const modalContent = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>${title}</h3>
-                    </div>
-                    <div class="modal-body">
-                        ${content}
-                    </div>
-                    <div class="modal-footer">
-                        ${buttons.map(btn => `
-                            <button class="${btn.class}" onclick="${btn.onclick}">${btn.text}</button>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+        function saveTransaksiMasuk() {
+            if (transaksiMasukItems.length === 0) {
+                showToast('Belum ada barang yang ditambahkan', 'warning');
+                return;
+            }
             
-            modal.innerHTML = modalContent;
-            modal.classList.add('show');
+            const supplier = document.getElementById('tmSupplier').value;
+            if (!supplier) {
+                showToast('Mohon pilih supplier', 'warning');
+                return;
+            }
+            
+            const data = {
+                tanggal: document.getElementById('tmTanggal').value,
+                kodeSupplier: supplier,
+                noPO: document.getElementById('tmNoPO').value,
+                noSuratJalan: document.getElementById('tmNoSuratJalan').value,
+                items: transaksiMasukItems
+            };
+            
+            if (!gas || !gas.run) return;
+            
+            showToast('Menyimpan transaksi...', 'info');
+            
+            gas.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showToast(result.message, 'success');
+                        clearTransaksiMasukForm();
+                    } else {
+                        showToast(result.message, 'error');
+                    }
+                })
+                .withFailureHandler(handleError)
+                .saveTransaksiMasuk(data, currentSession);
         }
         
-        function closeModal() {
-            const modal = document.getElementById('modalContainer');
-            modal.classList.remove('show');
-            setTimeout(() => {
-                modal.innerHTML = '';
-            }, 300);
+        // Utility functions
+        function handleError(error) {
+            console.error('System Error:', error);
+            showToast('Terjadi kesalahan sistem. Coba lagi nanti.', 'error');
         }
         
-        // Toast notifications
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
-            const toastId = 'toast-' + Date.now();
-            
-            const icons = {
-                success: 'fas fa-check-circle',
-                warning: 'fas fa-exclamation-triangle',
-                error: 'fas fa-times-circle',
-                info: 'fas fa-info-circle'
-            };
-            
-            const colors = {
-                success: '#4cc9f0',
-                warning: '#f8961e',
-                error: '#f72585',
-                info: '#4361ee'
-            };
-            
             const toast = document.createElement('div');
-            toast.id = toastId;
             toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <i class="${icons[type]}" style="color: ${colors[type]};"></i>
-                <div style="flex: 1;">${message}</div>
-                <button onclick="removeToast('${toastId}')" style="background: none; border: none; color: var(--gray); cursor: pointer;">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
             
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'warning') icon = 'exclamation-triangle';
+            if (type === 'error') icon = 'times-circle';
+            
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> <span>${message}</span>`;
             container.appendChild(toast);
             
-            // Show toast
+            // Trigger animation
             setTimeout(() => {
                 toast.classList.add('show');
             }, 10);
             
-            // Auto remove after 5 seconds
+            // Remove after 3 seconds
             setTimeout(() => {
-                removeToast(toastId);
-            }, 5000);
-        }
-        
-        function removeToast(toastId) {
-            const toast = document.getElementById(toastId);
-            if (toast) {
                 toast.classList.remove('show');
                 setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
+                    toast.remove();
                 }, 300);
-            }
-        }
-        
-        // Helper functions
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            });
-        }
-        
-        function handleError(error) {
-            console.error('Error:', error);
-            showToast('Terjadi kesalahan: ' + (error.message || 'Unknown error'), 'error');
-        }
-        
-        // Export functions for onclick events
-        window.showSection = showSection;
-        window.logout = logout;
-        window.addTransaksiMasukItem = addTransaksiMasukItem;
-        window.removeTransaksiMasukItem = removeTransaksiMasukItem;
-        window.saveTransaksiMasuk = saveTransaksiMasuk;
-        window.clearTransaksiMasukForm = clearTransaksiMasukForm;
-        window.selectUnit = function(button, type, conversion) {
-            // Remove active class from all buttons
-            button.parentElement.querySelectorAll('.unit-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Add active class to clicked button
-            button.classList.add('active');
-            
-            // Update selected unit
-            selectedUnit = {
-                name: button.textContent.trim(),
-                type: type,
-                conversion: conversion
-            };
-        };
-        window.closeModal = closeModal;
-        window.confirmSaveTransaksiMasuk = confirmSaveTransaksiMasuk;
-        window.toggleSidebar = toggleSidebar;
-        window.removeToast = removeToast;
-        
-        // Initialize on load
-        window.onload = function() {
-            // Check if there's a saved session
-            const savedSession = localStorage.getItem('inventory_session');
-            if (savedSession) {
-                try {
-                    const session = JSON.parse(savedSession);
-                    // Try to validate session
-                    const backendUrl = localStorage.getItem('inventory_backend_url');
-                    if (backendUrl) {
-                        document.getElementById('backendUrl').value = backendUrl;
-                        setupGASAPI(backendUrl);
-                        validateSession(session);
-                    }
-                } catch (e) {
-                    console.log('No valid session found');
-                }
-            }
-        };
-        
-        function validateSession(session) {
-            gas.run
-                .withSuccessHandler(function(result) {
-                    if (result.valid) {
-                        currentUser = result.session;
-                        currentSession = result.session;
-                        showDashboard();
-                        loadDashboardData();
-                    }
-                })
-                .withFailureHandler(function() {
-                    localStorage.removeItem('inventory_session');
-                })
-                .validateSession(session);
+            }, 3000);
         }
     </script>
 </body>
